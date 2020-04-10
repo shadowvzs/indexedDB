@@ -1,0 +1,8 @@
+CACHE MANIFEST
+# v3
+
+./css/*.css
+./js/*.js
+
+NETWORK:
+*
