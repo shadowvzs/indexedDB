@@ -21,13 +21,15 @@ const dbScheme = [
     }
 ];
 
-const myIndexDb = new IndexDB();
-// wait till connect to database (db name, db scheme)
-await myIndexDb.connect('valami2', dbScheme);
-// get table/entity
-const table = myIndexDb.table('table1');
-// add a new record
-table.add({ id: 2, kkk: "sss" });
+// useage
+// const myIndexDb = new IndexDB();
+    // wait till connect to database (db name, db scheme)
+// await myIndexDb.connect('valami2', dbScheme);
+    // get table/entity
+// const table = myIndexDb.table('table1');
+    // add a new record
+// table.add({ id: 2, kkk: "sss" });
+
 
 class IndexDBDatabase {
 
