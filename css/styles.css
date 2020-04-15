@@ -1,9 +1,84 @@
 body {
-  margin: 0;
-  padding: 0;
-  font-family: helvetica, sans-serif;
-}
-* {
-  box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+    font-family: helvetica, sans-serif;
 }
 
+* {
+    box-sizing: border-box;
+    outline: none;
+    text-decoration: none;
+    list-style: none;
+}
+
+#root {
+    display: flex;
+    flex-direction: row;
+    justify-content: center;
+}
+
+#root > div {
+    padding: 16px;
+    margin: 16px;
+    min-width: 200px;
+    max-width: 300px;
+    text-align: center;
+    background-color: rgba(0, 0, 0, 0.1);
+    border: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+#root > div > div:first-child {
+    padding-bottom: 16px;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.2);
+    min-height: 150px;
+}
+
+#root form * {
+    width: 100%;
+    margin: 8px 0;
+}
+
+#root ul li.item {
+    text-align: left;
+    border: 1px solid rgba(0,0,0,0.1);
+    background-color: rgba(0,0,0,0.1);
+    border-radius: 4px;
+    padding: 8px;
+    margin-bottom: 16px;
+}
+
+#root ul li.item .actions {
+    text-align: center;
+    font-weight: bold;
+    font-size: 12px;
+    font-family: arial black;
+}
+
+#root ul li:not(.item) {
+    display: flex;
+    justify-content: space-between;
+}
+
+#root ul li a {
+    cursor: pointer;
+}
+
+#root ul li.active a:first-child {
+    text-shadow: 0 0 4px #00f;
+}
+
+#root ul li.connected  a:first-child {
+    font-weight: bold;
+}
+
+#root ul li a:first-child {
+    color: blue;
+}
+
+#root ul li a:last-child {
+    color: red;
+}
+
+small {
+    font-size: 12px;
+}

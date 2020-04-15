@@ -5,7 +5,50 @@
         <link rel='stylesheet' href='./css/styles.css' type='text/css' media='all' />
     </head>
     <body>
-        <script src="./js/app.js"></script>
+        <div id="root">
+            <div>
+                <div>
+                    <form data-action="connectToDb">
+                        <h3> Connect to database </h3>
+                        <small>if not exist then it will created automatically</small>
+                        <input type="text" name="dbName" placeholder="Database name" />
+                    </form>
+                </div>
+                <div>
+                    <h4> List: </h4>
+                    <ul data-list="databases"></ul>
+                </div>
+            </div>
+            <div>
+                <div>
+                    <h3> Stores </h3>
+                    <small>Store is like document in noSQL</small>
+                    <small><b>Columns:</b><span class="columnList"></span></small>
+                </div>
+                <div>
+                    <h4> List: </h4>
+                    <ul data-list="stores"></ul>
+                </div>
+            </div>
+            <div>
+                <div>
+                    <form data-action="createRecord">
+                        <h3> Add entry </h3>
+                        <small>create record with this text</small>
+                        <input type="text" name="recordText" placeholder="Record text" />
+                    </form>
+                </div>
+                <div>
+                    <h4> List: </h4>
+                    <button data-action="createDummyData"> Create Dummy Records </button>
+                    <ul data-list="records"></ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- we load script at bottom -->
+        <script src="./js/indexDB.js"></script>
+        <script src="./js/exampleHelper.js"></script>
+        <script src="./js/exampleApi.js"></script>
     </body>
 </html>
-
