@@ -9,20 +9,27 @@ const createDummyRecord = async (db) => {
         username: dummyUserName[idx],
         date: dummyDate
     });
+
     // create a new profile for the user
     const profileId = await db.loadStore('profiles').add({
         displayName: dummyDisplayName[idx],
         user_id: userId,
     });
+
+    let commentId = Math.floor(Math.random() * dummyComment.length);
     // save a new comment
     await db.loadStore('comments').add({
-        message: dummyComment[idx] + '#1',
+        message: dummyComment[commentId] + '#1',
         user_id: userId,
     });
+
+    commentId = Math.floor(Math.random() * dummyComment.length);
     await db.loadStore('comments').add({
-        message: dummyComment[idx] + '#2',
+        message: dummyComment[commentId] + '#2',
         user_id: userId,
     });
+
+    commentId = Math.floor(Math.random() * dummyComment.length);
     await db.loadStore('comments').add({
         message: dummyComment[idx] + '#3',
         user_id: userId,
@@ -30,7 +37,7 @@ const createDummyRecord = async (db) => {
     // update user data with profile id
     await db.loadStore('users').update({
         id: userId,
-        profile_id: userId
+        profile_id: profileId
     });
     return;
 };

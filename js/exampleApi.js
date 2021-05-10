@@ -1,16 +1,16 @@
-{
+(async () => {
     const container = document.getElementById("root");
     const itemText = container.querySelector('input[name="recordText"]')
     const columnList = container.querySelector('.columnList')
 
     // assign event to form submit
     container.querySelectorAll('form').forEach(form => {
-        form.onsubmit = (event) => {
+        form.onsubmit = async (event) => {
             const form = event.target;
             const data = extractDataFromForm(form);
             const actionName = form.dataset.action;
             const dataArray = Object.values(data);
-            actions[actionName](dataArray.length === 1 ? dataArray[0]: data);
+            await actions[actionName](dataArray.length === 1 ? dataArray[0]: data);
             event.preventDefault();
             return false;
         }
@@ -20,10 +20,11 @@
     const listContainers = {};
     container.querySelectorAll('ul[data-list]').forEach(ul => {
         listContainers[ul.dataset.list] = ul;
-        ul.onclick = (event) => {
+        ul.onclick = async (event) => {
             const { action, param } = event.target.dataset;
-            if (action)
-                actions[action](param);
+            if (action) {
+                await actions[action](param);
+            }
         }
     });
 
@@ -43,6 +44,8 @@
     let selectedStore = null;
     let selectedRecord = null;
 
+    window['ss'] = myIndexDb;
+
     const getStore = () => {
         if (!selectedDb || !selectedStore || !myIndexDb.DBs[selectedDb].stores)
             return;
@@ -58,34 +61,33 @@
                 getDummyStoreScheme('comments'),
             ]);
             selectedDb = dbName;
-            actions.listDatabases();
+            await actions.listDatabases();
             const firstStore = Object.keys(myIndexDb.DBs[dbName].stores)[0];
-            actions.selectStore(firstStore);
+            await actions.selectStore(firstStore);
         },
         createDummyData: async () => {
             if (!selectedDb)
                 return alert('connect to an database');
             await createDummyRecord(myIndexDb.DBs[selectedDb]);
-            actions.listRecords();
+            await actions.listRecords();
         },
         selectStore: async (storeName) => {
             selectedStore = storeName;
             selectedRecord = null;
-            actions.listStores()
-            actions.listRecords();
+            await actions.listStores()
+            await actions.listRecords();
         },
         selectRecord: async (id) => {
-            const store = getStore();
+            const store = await getStore();
             if (!store) return console.error('No selected store');
-            const item = await store.findFirst(x => x.id === +id);
+            const item = await store.getFirst(x => x.id === +id);
             if (!item) return console.error('No selected item');
             itemText.value = JSON.stringify(item);
             selectedRecord = item.id;
         },
         createRecord: async (recordData) => {
-            const store = getStore();
-            if (!store)
-                return console.error('No selected store');
+            const store = await getStore();
+            if (!store) { return console.error('No selected store'); }
             const data = JSON.parse(recordData);
             if (!selectedRecord) {
                 await store.add(data);
@@ -93,18 +95,18 @@
                 await store.update(data);
                 selectedRecord = null;
             }
-            actions.listRecords();
+            await actions.listRecords();
         },
         deleteRecord: async (id) => {
-            const store = getStore();
-            if (!store)
-                return console.error('No selected store');
-            if (selectedRecord === +id)
+            const store = await getStore();
+            if (!store) { return console.error('No selected store'); }
+            if (selectedRecord === +id) {
                 selectedRecord = null;
+            }
             await store.delete(+id);
-            actions.listRecords();
+            await actions.listRecords();
         },
-        listDatabases: () => {
+        listDatabases: async () => {
             const connectedDbNames = Object.keys(myIndexDb.DBs);
             const registeredDbNames = Object.keys(myIndexDb.config);
             const dbNames = new Set([...connectedDbNames, ...registeredDbNames]);
@@ -127,12 +129,14 @@
             listContainers['databases'].innerHTML = list;
         },
         listStores: async () => {
-            if (!selectedDb || !selectedStore || !myIndexDb.DBs[selectedDb].stores)
+            if (!selectedDb || !selectedStore || !myIndexDb.DBs[selectedDb].stores) {
                 return listContainers['stores'].innerHTML = '';
+            }
             const db = myIndexDb.DBs[selectedDb];
             const stores = db.stores;
-            if (selectedStore)
+            if (selectedStore) {
                 columnList.innerHTML = db.dbScheme.find(x => x.name === selectedStore).columns.map(x => x.name).join(', ');
+            }
             const storeNames = Object.keys(stores);
             let list = ``;
             storeNames.forEach(name => {
@@ -147,9 +151,10 @@
         },
         listRecords: async () => {
             const store = getStore();
-            if (!store)
+            if (!store) {
                 return listContainers['records'].innerHTML = '';
-            const items = await store.getJoin(null, 2);
+            }
+            const items = await store.getRelatedEntities(null, 2);
             let list = ``;
             items.forEach(item => {
                 const classNames = ['item'];
@@ -157,7 +162,6 @@
                 list += `
                 <li class="${classNames.join(' ')}">
                     ${Object.entries(item).map(([key, value])=> {
-                        console.log(item);
                         if (typeof value === "object")
                             return `<div><b>${key}:</b> ${JSON.stringify(value)}</div>`;
                         return `<div><b>${key}:</b> ${value}</div>`;
@@ -170,26 +174,26 @@
             });
             listContainers['records'].innerHTML = list;
         },
-        dropDatabase: (dbName) => {
+        dropDatabase: async (dbName) => {
             if (selectedDb === dbName)
                 selectedDb = null;
-            myIndexDb.drop(dbName);
-            actions.listDatabases();
+            await myIndexDb.drop(dbName);
+            await actions.listDatabases();
 
         },
-        dbDisconnect: (dbName) => {
+        dbDisconnect: async (dbName) => {
             if (selectedDb === dbName) {
                 selectedDb = null;
                 selectedStore = null;
                 selectedRecord = null;
-                actions.listStores()
-                actions.listRecords();
+                await actions.listStores()
+                await actions.listRecords();
             }
-            myIndexDb.disconnect(dbName);
-            actions.listDatabases();
+            await myIndexDb.disconnect(dbName);
+            await actions.listDatabases();
         }
     }
 
-    actions.listDatabases();
+    await actions.listDatabases();
     container.querySelector('button[data-action="createDummyData"]').onclick = actions.createDummyData;
-};
+})();
