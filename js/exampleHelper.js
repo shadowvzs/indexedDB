@@ -42,137 +42,86 @@ const createDummyRecord = async (db) => {
     return;
 };
 
-const getDummyStoreScheme = (storeName) => {
-
-    if (storeName === 'users') {
-        return {
-            name: 'users',
-            columns: [
-                {
-                    name: 'id',
-                    primaryKey: true,
-                    autoIncrement: true,
-                },
-                {
-                    name: 'username',
-                    index: true,
-                    unique: false
-                },
-                {
-                    name: 'profile_id',
-                    index: true
-                },
-                {
-                    name: 'date',
-                    index: true,
-                    unique: true
+const dbScheme = {
+    users: {
+        id: {
+            primaryKey: true,
+            autoIncrement: true, 
+        },
+        username: {
+            index: true,
+            unique: false
+        },
+        profile_id: {
+            index: true
+        },
+        date: {
+            index: true,
+            unique: true
+        },
+        __relationships: {
+            hasOne: {
+                profile: {
+                    source: 'profile_id',
+                    target: 'profiles.id'
                 }
-            ],
-            relationships: {
-                hasOne: {
-                    profile: {
-                        source: 'profile_id',
-                        target: 'profiles.id'
-                    }
-                },
-                hasMany: {
-                    comments: {
-                        source: 'id',
-                        target: 'comments.user_id'
-                    }
-                }
-            }
-        };
-    }
-
-    if (storeName === 'comments') {
-        return {
-            name: 'comments',
-            columns: [
-                {
-                    name: 'id',
-                    primaryKey: true,
-                    autoIncrement: true,
-                },
-                {
-                    name: 'message',
-                    index: true,
-                    unique: false
-                },
-                {
-                    name: 'user_id',
-                    index: true
-                },
-                {
-                    name: 'date',
-                    index: true,
-                    unique: true
-                }
-            ],
-            relationships: {
-                hasOne: {
-                    author: {
-                        source: 'user_id',
-                        target: 'users.id'
-                    }
-                }
-            }
-        };
-    }
-
-    if (storeName === 'profiles') {
-        return {
-            name: 'profiles',
-            columns: [
-                {
-                    name: 'id',
-                    primaryKey: true,
-                    autoIncrement: true,
-                },
-                {
-                    name: 'displayName',
-                    index: true,
-                    unique: false
-                },
-                {
-                    name: 'user_id',
-                    index: true
-                },
-                {
-                    name: 'date',
-                    index: true,
-                    unique: true
-                }
-            ],
-            relationships: {
-                hasOne: {
-                    user: {
-                        source: 'user_id',
-                        target: 'users.id'
-                    }
-                }
-            }
-        };
-    }
-
-    return {
-        name: storeName,
-        columns: [
-            {
-                name: 'id',
-                primaryKey: true,
-                autoIncrement: true,
             },
-            {
-                name: 'text',
-                index: true,
-                unique: false
-            },
-            {
-                name: 'date',
-                index: true,
-                unique: true
+            hasMany: {
+                comments: {
+                    source: 'id',
+                    target: 'comments.user_id'
+                }
             }
-        ]
-    };
+        }            
+    },
+    comments: {
+        id: {
+            primaryKey: true,
+            autoIncrement: true,                
+        },
+        message: {
+            index: true,
+            unique: false                
+        },
+        user_id: {
+            index: true
+        },
+        date: {
+            index: true,
+            unique: true
+        },
+        __relationships: {
+            hasOne: {
+                author: {
+                    source: 'user_id',
+                    target: 'users.id'
+                }
+            }
+        }            
+    },
+    profiles: {
+        id: {
+            primaryKey: true,
+            autoIncrement: true,
+        },
+        displayName: {
+            index: true,
+            unique: false
+        },
+        user_id: {
+            index: true
+        },
+        date: {
+            index: true,
+            unique: true
+        },
+        __relationships: {
+            hasOne: {
+                user: {
+                    source: 'user_id',
+                    target: 'users.id'
+                }
+            }
+        }            
+    }
 };

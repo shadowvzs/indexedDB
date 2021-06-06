@@ -5,13 +5,14 @@
 
     // assign event to form submit
     container.querySelectorAll('form').forEach(form => {
-        form.onsubmit = async (event) => {
+        form.onsubmit = (event) => {
             const form = event.target;
             const data = extractDataFromForm(form);
             const actionName = form.dataset.action;
             const dataArray = Object.values(data);
-            await actions[actionName](dataArray.length === 1 ? dataArray[0]: data);
             event.preventDefault();
+            event.stopPropagation();
+            actions[actionName](dataArray.length === 1 ? dataArray[0]: data);
             return false;
         }
     });
@@ -39,41 +40,43 @@
     };
 
     // init our indexDB
-    const myIndexDb = new IndexDB();
-    let selectedDb = null;
-    let selectedStore = null;
-    let selectedRecord = null;
+    const DBs = {};
+    const state = {
+        selectedDb: null,
+        selectedStore: null,
+        selectedRecord: null
+    }
 
-    window['ss'] = myIndexDb;
+    window['DBs'] = DBs;
+    window['dbScheme'] = dbScheme;
+    window['IDB'] = IDB;    
 
     const getStore = () => {
-        if (!selectedDb || !selectedStore || !myIndexDb.DBs[selectedDb].stores)
+        if (!state.selectedDb || !state.selectedStore || !DBs[state.selectedDb].stores)
             return;
-        return myIndexDb.DBs[selectedDb].loadStore(selectedStore);
+        return DBs[state.selectedDb].loadStore(state.selectedStore);
     }
 
     // all action what we use in view, in this action we use the data from forms and pass to indexDb
     const actions = {
         connectToDb: async (dbName) => {
-            await myIndexDb.connect(dbName, [
-                getDummyStoreScheme('profiles'),
-                getDummyStoreScheme('users'),
-                getDummyStoreScheme('comments'),
-            ]);
-            selectedDb = dbName;
+            if (dbName.trim().length === 0) { return console.warn('not valid db title'); }
+            if (!DBs[dbName]) { DBs[dbName] = new IDB(dbName, dbScheme, 1); }
+            await DBs[dbName].connect();
+            state.selectedDb = dbName;
             await actions.listDatabases();
-            const firstStore = Object.keys(myIndexDb.DBs[dbName].stores)[0];
+            const firstStore = Object.keys(DBs[dbName].stores)[0];
             await actions.selectStore(firstStore);
         },
         createDummyData: async () => {
-            if (!selectedDb)
+            if (!state.selectedDb)
                 return alert('connect to an database');
-            await createDummyRecord(myIndexDb.DBs[selectedDb]);
+            await createDummyRecord(DBs[state.selectedDb]);
             await actions.listRecords();
         },
         selectStore: async (storeName) => {
-            selectedStore = storeName;
-            selectedRecord = null;
+            state.selectedStore = storeName;
+            state.selectedRecord = null;
             await actions.listStores()
             await actions.listRecords();
         },
@@ -83,40 +86,37 @@
             const item = await store.getFirst(x => x.id === +id);
             if (!item) return console.error('No selected item');
             itemText.value = JSON.stringify(item);
-            selectedRecord = item.id;
+            state.selectedRecord = item.id;
         },
         createRecord: async (recordData) => {
             const store = await getStore();
             if (!store) { return console.error('No selected store'); }
             const data = JSON.parse(recordData);
-            if (!selectedRecord) {
+            if (!state.selectedRecord) {
                 await store.add(data);
             } else {
                 await store.update(data);
-                selectedRecord = null;
+                state.selectedRecord = null;
             }
             await actions.listRecords();
         },
         deleteRecord: async (id) => {
             const store = await getStore();
             if (!store) { return console.error('No selected store'); }
-            if (selectedRecord === +id) {
-                selectedRecord = null;
+            if (state.selectedRecord === +id) {
+                state.selectedRecord = null;
             }
             await store.delete(+id);
             await actions.listRecords();
         },
         listDatabases: async () => {
-            const connectedDbNames = Object.keys(myIndexDb.DBs);
-            const registeredDbNames = Object.keys(myIndexDb.config);
-            const dbNames = new Set([...connectedDbNames, ...registeredDbNames]);
+            const dbEntries = Object.entries(DBs);
             let list = ``;
-            dbNames.forEach(name => {
+            dbEntries.forEach(([name, db]) => {
                 const classNames = [];
-                let isOn = connectedDbNames.indexOf(name) >= 0;
-                if (name === selectedDb) classNames.push('active');
-                if (isOn)
-                    classNames.push('connected');
+                let isOn = db.connected;
+                if (name === state.selectedDb) { classNames.push('active'); }
+                if (isOn) { classNames.push('connected'); }
                 list += `<li class="${classNames.join(' ')}">
                     <a>${name}</a>
                     <div>
@@ -129,19 +129,19 @@
             listContainers['databases'].innerHTML = list;
         },
         listStores: async () => {
-            if (!selectedDb || !selectedStore || !myIndexDb.DBs[selectedDb].stores) {
+            if (!state.selectedDb || !state.selectedStore || !DBs[state.selectedDb].stores) {
                 return listContainers['stores'].innerHTML = '';
             }
-            const db = myIndexDb.DBs[selectedDb];
+            const db = DBs[state.selectedDb];
             const stores = db.stores;
-            if (selectedStore) {
-                columnList.innerHTML = db.dbScheme.find(x => x.name === selectedStore).columns.map(x => x.name).join(', ');
+            if (state.selectedStore) {
+                columnList.innerHTML = Object.keys(db.dbScheme[state.selectedStore]).join(', ');
             }
             const storeNames = Object.keys(stores);
             let list = ``;
             storeNames.forEach(name => {
                 const classNames = [];
-                if (name === selectedStore) classNames.push('active');
+                if (name === state.selectedStore) classNames.push('active');
                 list += `<li class="${classNames.join(' ')}">
                     <a data-action="selectStore" data-param="${name}" title="Select '${name}' store">${name}</a>
                     <a data-action="deleteStore" data-param="${name}" title="Delete '${name}' store"> [DEL] </a>
@@ -151,14 +151,12 @@
         },
         listRecords: async () => {
             const store = getStore();
-            if (!store) {
-                return listContainers['records'].innerHTML = '';
-            }
+            if (!store) { return listContainers['records'].innerHTML = ''; }
             const items = await store.getRelatedEntities(null, 2);
             let list = ``;
             items.forEach(item => {
                 const classNames = ['item'];
-                if (item.id === selectedRecord) classNames.push('active');
+                if (item.id === state.selectedRecord) classNames.push('active');
                 list += `
                 <li class="${classNames.join(' ')}">
                     ${Object.entries(item).map(([key, value])=> {
@@ -175,21 +173,20 @@
             listContainers['records'].innerHTML = list;
         },
         dropDatabase: async (dbName) => {
-            if (selectedDb === dbName)
-                selectedDb = null;
-            await myIndexDb.drop(dbName);
+            if (state.selectedDb === dbName) { state.selectedDb = null; }
+            await DBs[dbName].drop(dbName);
             await actions.listDatabases();
 
         },
         dbDisconnect: async (dbName) => {
-            if (selectedDb === dbName) {
-                selectedDb = null;
-                selectedStore = null;
-                selectedRecord = null;
+            if (state.selectedDb === dbName) {
+                state.selectedDb = null;
+                state.selectedStore = null;
+                state.selectedRecord = null;
                 await actions.listStores()
                 await actions.listRecords();
             }
-            await myIndexDb.disconnect(dbName);
+            await DBs[dbName].disconnect();
             await actions.listDatabases();
         }
     }
